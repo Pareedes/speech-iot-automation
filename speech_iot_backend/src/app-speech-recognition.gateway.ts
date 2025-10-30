@@ -9,13 +9,12 @@ import axios from 'axios'; // <--- IMPORTANTE: instale axios com "npm i axios"
 
 @WebSocketGateway({ path: '/speech-recognition' })
 export class AppSpeechRecognitionGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: any;
 
   // 🧠 Endereço base do seu ESP32
-  private espBaseUrl = process.env.ESP_URL || 'http://192.168.43.120';
+  private espBaseUrl = process.env.ESP_URL || 'http://192.168.4.1';
   // ↑ Troque esse IP pelo que aparece no Serial Monitor do seu ESP32.
 
   handleConnection(client: WebSocket) {
@@ -62,14 +61,15 @@ export class AppSpeechRecognitionGateway
       // 2️⃣ Mapear frases de voz para comandos do ESP
       let cmd: string | null = null;
 
-      if (text.includes('ligar') && text.includes('ventoinha')) cmd = 'ligar_fan1';
-      else if (text.includes('desligar') && text.includes('ventoinha')) cmd = 'desligar_fan1';
-      else if (text.includes('ligar') && text.includes('led 1')) cmd = 'ligar_led1';
+      if (text.includes('desligar') && text.includes('ventoinha')) cmd = 'desligar_fan1';
+      else if (text.includes('ligar') && text.includes('ventoinha')) cmd = 'ligar_fan1';
       else if (text.includes('desligar') && text.includes('led 1')) cmd = 'desligar_led1';
-      else if (text.includes('ligar') && text.includes('led 2')) cmd = 'ligar_led2';
+      else if (text.includes('ligar') && text.includes('led 1')) cmd = 'ligar_led1';
       else if (text.includes('desligar') && text.includes('led 2')) cmd = 'desligar_led2';
-      else if (text.includes('ligar') && text.includes('led 3')) cmd = 'ligar_led3';
+      else if (text.includes('ligar') && text.includes('led 2')) cmd = 'ligar_led2';
       else if (text.includes('desligar') && text.includes('led 3')) cmd = 'desligar_led3';
+      else if (text.includes('ligar') && text.includes('led 3')) cmd = 'ligar_led3';
+
 
       if (!cmd) {
         client.send(
