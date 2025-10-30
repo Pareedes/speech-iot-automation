@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Controle de Voz - ESP32</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #eee;
+            text-align: center;
+            padding-top: 40px;
+        }
+
+        button {
+            padding: 15px 25px;
+            margin: 10px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #fala {
+            margin-top: 20px;
+            font-size: 20px;
+            color: #0f0;
+        }
+
+        #status {
+            margin-top: 10px;
+            color: #0ff;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎙️ Controle de Voz - ESP32</h1>
+    <p>Fale comandos como <b>"ligar led 1"</b> ou <b>"desligar ventoinha"</b>.</p>
+
+    <button id="botaoFalar">🎤 Iniciar Reconhecimento</button>
+    <div id="fala">Aguardando...</div>
+    <div id="status"></div>
+
+    <script>
+        const espIp = "http://192.168.4.1"; // IP do ESP32 no modo Access Point
+
+        // --- Função para enviar comandos HTTP ---
+        async function enviar(cmd) {
+            const url = `${espIp}/acao?cmd=${cmd}`;
+            try {
+                const r = await fetch(url);
+                const txt = await r.text();
+                document.getElementById("status").innerText = "✅ " + txt;
+            } catch (e) {
+                document.getElementById("status").innerText = "❌ Erro ao conectar ao ESP: " + e;
+            }
+        }
+
+        // --- Função para interpretar fala ---
+        function interpretarComando(texto) {
+            const fraseOriginal = texto.toLowerCase().trim();
+            const frase = fraseOriginal
+                .normalize("NFD") // remove acentos
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s+/g, " ");
+
+            document.getElementById("fala").innerText = "📢 Você disse: " + fraseOriginal;
+
+            // Normaliza palavras por extenso -> números
+            const fraseNorm = frase
+                .replace(/\bum\b/g, "1")
+                .replace(/\buma\b/g, "1")
+                .replace(/\bprimeiro\b/g, "1")
+                .replace(/\bdois\b/g, "2")
+                .replace(/\bsegundo\b/g, "2")
+                .replace(/\btres\b/g, "3")
+                .replace(/\bterceiro\b/g, "3");
+
+            // --- Mapeamento de comandos ---
+            if (fraseNorm.includes("desligar") && fraseNorm.includes("led 1")) enviar("desligar_led1");
+            else if (fraseNorm.includes("ligar") && fraseNorm.includes("led 1")) enviar("ligar_led1");
+            else if (fraseNorm.includes("desligar") && fraseNorm.includes("led 2")) enviar("desligar_led2");
+            else if (fraseNorm.includes("ligar") && fraseNorm.includes("led 2")) enviar("ligar_led2");
+            else if (fraseNorm.includes("desligar") && fraseNorm.includes("led 3")) enviar("desligar_led3");
+            else if (fraseNorm.includes("ligar") && fraseNorm.includes("led 3")) enviar("ligar_led3");
+            else if (fraseNorm.includes("desligar") && fraseNorm.includes("ventoinha")) enviar("desligar_fan1");
+            else if (fraseNorm.includes("ligar") && fraseNorm.includes("ventoinha")) enviar("ligar_fan1");
+            else if (fraseNorm.includes("ligar tudo") || fraseNorm.includes("ligar todos"))
+                [1, 2, 3].forEach(i => enviar(`ligar_led${i}`));
+            else if (fraseNorm.includes("desligar tudo") || fraseNorm.includes("desligar todos"))
+                [1, 2, 3].forEach(i => enviar(`desligar_led${i}`));
+            else
+                document.getElementById("status").innerText = "🤔 Comando não reconhecido.";
+        }
+
+
+        // --- Configuração da Web Speech API ---
+        const botao = document.getElementById("botaoFalar");
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "pt-BR";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+            const resultado = event.results[0][0].transcript;
+            interpretarComando(resultado);
+        };
+
+        recognition.onerror = (event) => {
+            document.getElementById("status").innerText = "⚠️ Erro no reconhecimento: " + event.error;
+        };
+
+        botao.onclick = () => {
+            document.getElementById("status").innerText = "🎧 Ouvindo...";
+            recognition.start();
+        };
+    </script>
+</body>
+
+</html>
